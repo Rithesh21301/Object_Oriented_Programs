@@ -1,0 +1,215 @@
+#include <iostream>
+#include <string>
+#include<vector>
+#include <algorithm>
+#include <climits>
+#include <unordered_map>
+using namespace std;
+
+template<typename Type1>
+void swap(Type1 &a,Type1 &b){
+    Type1 temp=a;
+    a=b;
+    b=temp;
+}
+
+template <typename Type2>
+class priority_queue{
+        private:
+            int sz;
+            vector<Type2> arr;
+            void heapify_down(int i)
+            {
+                int l=2*i+1;
+                int r=2*i+2;
+                int sm=i;
+
+                if (l<arr.size()&&arr[l]<arr[sm]){
+                    sm=l;
+                }
+                if (r<arr.size()&&arr[r]<arr[sm]) {
+                    sm=r;
+                }
+                if(sm!=i) {
+                    swap(arr[i],arr[sm]);
+                    heapify_down(sm);
+                }
+
+            }
+            void heapify_up(int i){
+                int p=(i-1)/2;
+                if(i>0&&arr[i]<arr[p]){
+                    swap(arr[i],arr[p]);
+                    heapify_up(p);
+                }
+            }
+
+        public:
+            const size_t size() const{
+                
+                return arr.size();
+            }
+            void push(const Type2& x){
+                sz++;
+
+                arr.push_back(x);
+                heapify_up(arr.size()-1);
+                
+            }
+            void pop(){
+                if(arr.empty()){
+                    return;
+                }
+                arr[0]=arr.back();
+                arr.pop_back();
+                if(!arr.empty()){
+                    heapify_down(0);
+                }
+                sz--;
+            }
+            const Type2& top() const{
+                return arr[0];
+                
+
+            }
+            const bool empty() const{
+                if(arr.size()==0){
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            }
+
+
+
+};
+
+
+
+
+
+class Node{
+    private:
+        string name;
+        int idx; //giving index for each number 
+        int dist;
+    public:
+
+        Node(string n="",int idx=-1,int d=INT_MAX){
+            name=n;
+            this->idx=idx;
+            dist=d; //initially setting all distances to zero
+        }
+
+        int get_index()const{ return idx;}
+        string get_name()const{ return name; }
+        int get_dis()const{ return dist; }
+        void set_name(string nam){ name=nam; }
+        void set_index(int index) { idx=index; }
+        void set_dist(int d){ dist=d; }
+
+        bool operator<(const Node& oth)const{
+            return dist<oth.dist;
+        }
+        
+};
+
+// to get the indexes of particular name
+
+// int get_no_by_name(string nam,vector<Node> &vec){
+//         //auto it=find(vec.begin(),vec.end(),name);
+//         for(Node x:vec){
+//             if(x.get_name()==nam){
+//                 return x.get_index();
+//             }
+//         }
+//         return -1;
+// }
+
+int main(){
+    int n,m;
+    cin>>n>>m;
+    vector<vector<pair<int,int>>> vec(n); //using this to store edge weights 
+    //vector<Node> for_nodes;
+    unordered_map<string,int>name_to_idx;
+    for(int i=0;i<n;i++){
+        string s;
+        cin>>s;
+        // Node nod(s,i);
+        // for_nodes.push_back(nod);
+        name_to_idx[s]=i;
+    }
+
+    for(int i=0;i<m;i++)
+    {
+        string x,y;
+        int z;
+        cin>>x>>y>>z;
+        int a,b;
+
+        a=name_to_idx[x];
+        b=name_to_idx[y];
+
+        vec[a].emplace_back(b,z);
+        vec[b].emplace_back(a,z);
+        
+    }
+
+    string sour_name,dest_name;
+    cin>>sour_name>>dest_name;
+    int sour=name_to_idx[sour_name];
+    int dest=name_to_idx[dest_name];
+
+    if (sour==dest){
+        cout<<0<<endl;
+        return 0;
+    }
+
+    vector<vector<int>> dis(2, vector<int>(n, INT_MAX));
+
+    dis[0][sour]=0;
+
+    priority_queue<pair<int,pair<int,int>>> pri_que;
+      pri_que.push({0,{sour,0}});
+
+    while(!pri_que.empty()){
+        auto cur=pri_que.top();
+        pri_que.pop();
+
+         int cur_dis=cur.first;
+        int u=cur.second.first;
+          int par=cur.second.second; //to check that it is even edges or odd
+
+        if(cur_dis>dis[par][u]){
+            continue;
+        }
+
+        for(auto& x:vec[u]){
+            int v=x.first;
+
+            int wt=x.second;
+
+            int new_par=1-par;
+            int new_dis=cur_dis+wt;
+
+            if(new_dis<dis[new_par][v]){
+                  dis[new_par][v]=new_dis;
+
+                pri_que.push({new_dis,{v,new_par}});
+            }
+        }
+
+        
+    }
+    if(dis[0][dest]!=INT_MAX){
+        //
+        cout<<dis[0][dest]<<endl;
+
+    }
+    else{
+        cout<<-1<<endl;
+    }
+
+    return 0;
+}
