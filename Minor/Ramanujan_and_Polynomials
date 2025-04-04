@@ -1,0 +1,359 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <iomanip>
+#include <cmath>
+using namespace std;
+
+// Complex number class
+class Complex {
+public:
+    long long real,img;
+    Complex(long long r=0,long long i=0):real(r),img(i){}
+
+    Complex operator+(const Complex&c2)const{
+        long long a=real+c2.real;
+        long long b=img+c2.img;
+        return Complex(a,b);
+    }
+    Complex operator-(const Complex& c2)const{
+        long long a=real-c2.real;
+        long long b=img-c2.img;
+        return Complex(a,b);
+
+    }
+    Complex operator*(const Complex& c2)const {
+        long long a=real*c2.real-img*c2.img;
+        long long b=real*c2.img+img*c2.real;
+        return Complex(a,b);
+    }
+
+    friend ostream& operator<<(ostream&os,const Complex&c) {
+        os<<c.real<<" "<<c.img;
+        return os;
+    }
+
+    Complex& operator+=(const Complex&c2) {
+        real+=c2.real;
+        img+=c2.img;
+        return *this;
+    }
+};
+
+// Polynomial evaluator
+template <typename T>
+class Evaluation{
+private:
+    const vector<T>&coeffs;
+public:
+    Evaluation(const vector<T>&c):coeffs(c) {}
+
+    T evaluate(T x)const{
+        T rest=0;
+        T power=1;
+        for(const auto&coeff:coeffs) {
+             rest+=coeff*power;
+           power*= x;
+        }
+        return rest;
+    }
+};
+
+// Polynomial differentiator
+template <typename T>
+class Differentiation{
+private:
+
+    const vector<T>& coeffs;
+public:
+    Differentiation(const vector<T>& c):coeffs(c){}
+
+    vector<T>differentiate()const{
+       if(coeffs.size()<=1){
+             return vector<T>{0};
+        }
+        vector<T>res(coeffs.size()-1);
+         for(size_t i=1;i<coeffs.size();i++) {
+
+              res[i-1]=coeffs[i]*static_cast<int>(i);
+        }
+        return res;
+    }
+};
+
+
+template <typename T>
+class Poly {
+private:
+      vector<T>cof;
+
+    vector<T>mul_Polys(const vector<T>&a,const vector<T>&b) {
+        size_t n=a.size();
+        size_t m=b.size();
+        
+         if(n==0||m==0){
+              return vector<T>();
+    } 
+        
+        //case for  small   polynomials
+          if(n<=32||m<=32){
+             vector<T>rest(n+m-1,T(0));
+              for(size_t i=0;i<n;i++) {
+                 for(size_t j=0;j<m;j++) {
+                    rest[i+j]+=a[i]*b[j];
+            }
+          }
+             return rest;
+        }
+        
+        size_t hf=max(n,m)/2;
+        
+        vector<T>a0(a.begin(),a.begin()+min(hf, n));
+          vector<T>a1(a.begin()+min(hf,n),a.end());
+          vector<T>b0(b.begin(),b.begin()+min(hf, m));
+          vector<T>b1(b.begin()+min(hf,m),b.end());
+        
+        vector<T>a0b0 = mul_Polys(a0,b0);
+        vector<T>a1b1 = mul_Polys(a1,b1);
+        
+        vector<T>yy(a0.size());
+        vector<T>bb(b0.size());
+        
+        for(size_t i=0;i<a0.size();i++) {
+            if(i<a1.size()) {
+                yy[i]=a0[i]+a1[i];
+            }else{
+                yy[i]=a0[i];
+            }
+        }
+        
+        for(size_t i=0;i<b0.size();i++) {
+            if(i<b1.size()){
+                bb[i]=b0[i]+b1[i];
+            }else{
+                bb[i]=b0[i];
+            }
+        }
+        
+        vector<T>sumprod=mul_Polys(yy, bb);
+        
+        vector<T>middle(sumprod.size());
+        for (size_t i=0;i<sumprod.size();i++) {
+            middle[i]=sumprod[i];
+            if(i<a0b0.size()){
+                middle[i]=middle[i]-a0b0[i];
+            } 
+            if(i<a1b1.size()){
+                middle[i]=middle[i]-a1b1[i];
+            } 
+        }
+        
+        vector<T>rest(n+m-1,T(0));
+        for(size_t i=0;i<a0b0.size();i++) {
+            rest[i]+=a0b0[i];
+        }
+        for(size_t i=0;i<middle.size();i++) {
+            rest[i+hf]+=middle[i];
+        }
+        for(size_t i=0;i<a1b1.size();i++) {
+            rest[i+2*hf]+=a1b1[i];
+        }
+    
+        return rest;
+    }
+
+public:
+    Poly(const vector<T>& coeffs):cof(coeffs){}
+
+    Poly operator*(const Poly& c2){
+        
+          vector<T>rest=mul_Polys(cof,c2.cof);
+        return Poly(rest);
+    }
+
+    Evaluation<T>getEvaluator()const{
+           return Evaluation<T>(cof);
+    }
+
+    Differentiation<T>getDifferentiator()const{
+       
+        return Differentiation<T>(cof);
+    }
+
+    void print()const{
+        for (size_t i=0;i<cof.size();i++){
+            if(i!=0){
+              cout<<" ";
+        } 
+             cout<<fixed<<setprecision(6)<<cof[i];
+     }
+        cout<<endl;
+   }
+};
+
+// Specialization for strings
+template <>
+class Poly<string>{
+private:
+    vector<string>cof;
+public:
+    Poly(const vector<string>&coeffs):cof(coeffs){}
+
+    string evaluate(int x)const{
+        string rest;
+        for(int i=cof.size()-1;i>=0;i--) {
+             int repeat = static_cast<int>(pow(x, i));
+            for(int j=0;j<repeat;j++) {
+              rest+=cof[i];
+            }
+        }
+        return rest;
+    }
+
+    Poly<string>operator*(const Poly<string>&c2){
+         return *this; }
+    void print()const{
+        for(const auto&c:cof){
+            cout<<c<<" ";
+        }
+        cout<<endl;
+    }
+};
+
+vector<Complex>compcof(int deg) {
+    vector<Complex>coeffs;
+    for (int i=0;i<deg; i++) {
+        long long real,img;
+        cin>>real>>img;
+        coeffs.emplace_back(real, img);
+    }
+    return coeffs;
+}
+
+int main(){
+    cout<<fixed<<setprecision(6); 
+    int q;
+    cin>>q;
+    while(q--) {
+        int op;
+        cin>>op;
+        string type;
+        cin>>type;
+
+        if (op==1){ // Multiplication
+            int deg1,deg2;
+            cin>>deg1;
+
+            if(type=="integer") {
+                vector<long long>coeffs1(deg1),coeffs2;
+                 for(auto& c:coeffs1){
+                    cin>>c;
+                } 
+                Poly<long long>p1(coeffs1);
+
+                cin>>deg2;
+                coeffs2.resize(deg2);
+                for(auto&c:coeffs2) {
+                    cin>>c;
+                } 
+                Poly<long long>p2(coeffs2);
+
+                (p1*p2).print();
+            }
+            else if (type=="float") {
+                  vector<long double>coeffs1(deg1),coeffs2;
+                  for(auto& c:coeffs1){
+                      cin>>c;
+                } 
+                Poly<long double>p1(coeffs1);
+
+                cin>>deg2;
+                coeffs2.resize(deg2);
+                for(auto& c:coeffs2) {
+                    cin>>c;
+                } 
+                 Poly<long double > p2 (coeffs2);
+
+                (p1*p2).print();
+            }
+            else if (type=="complex") {
+                vector<Complex>coeffs1 = compcof(deg1);
+                Poly<Complex>p1(coeffs1);
+
+                cin>>deg2;
+                vector<Complex>coeffs2=compcof (deg2);
+                Poly<Complex>p2(coeffs2);
+
+                (p1*p2).print();
+            }
+        }
+        else if(op== 2){ // Evaluation
+            int deg ,x;
+            cin>>deg;
+
+            if (type=="integer") {
+                vector<long long>coeffs(deg);
+                  for(auto& c:coeffs) {
+                    cin>>c;
+                } 
+                Poly<long long>p(coeffs);
+                cin>>x;
+                  cout<<p.getEvaluator().evaluate(x);
+                 cout<<endl;
+            }
+            else if (type=="float") {
+                vector<long double>coeffs(deg);
+                 for(auto& c:coeffs) {
+                     cin>>c;
+                } 
+                 Poly<long double>p(coeffs);
+                  cin>>x;
+                 cout<<p.getEvaluator().evaluate(static_cast<long double>(x))<<endl;
+            }
+            else if(type=="string") {
+                 vector<string>coeffs(deg);
+                 for (auto& c:coeffs) {
+                    cin>>c;
+                 } 
+                 Poly<string>p(coeffs);
+                cin>>x;
+                 cout<<p.evaluate(x)<<endl;
+            }
+        }
+        else if(op==3) { // Differentiation
+            int deg;
+             cin>>deg;
+              if(type=="integer") {
+                 vector<long long>coeffs(deg);
+                 for(auto& c:coeffs) {
+                    cin>>c;
+                } 
+                Poly<long long>p(coeffs);
+                vector<long long>diff=p.getDifferentiator().differentiate();
+                for (size_t i=0;i<diff.size();i++) {
+                    if (i!=0){
+                        cout<<" ";
+                    } 
+                    cout<<diff[i];
+                }
+              cout<<endl;
+          }
+             else if(type=="float") {
+                vector<long double>coeffs(deg);
+                for (auto& c:coeffs){
+                    cin>>c;
+                }
+            Poly<long double>p(coeffs);
+                vector<long double>diff=p.getDifferentiator().differentiate();
+                   for (size_t i=0;i<diff.size();i++) {
+                    if (i!=0){
+                        cout<<" ";
+                    } 
+                      cout<<fixed<<setprecision(6)<<diff[i];
+                }
+                 cout<<endl;
+            }
+        }
+    }
+    return 0;
+}
