@@ -1,0 +1,465 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+class Comparator{
+    public:
+        Comparator(long long x):val(x) {};
+    bool operator()(long long p,long long  q)const{
+         return (val==1)?  (p  < q): (p>q );
+    }
+    private: 
+         long long val;
+};
+
+void mergs(vector<long long>&ar,long long l,long long m,long long r,Comparator &com){
+    long long x=m-l+1;
+    long long y=r-m;
+    vector<long long>lef(x);
+    vector<long long>rig(y);
+    long long i=0;
+    while(i<x)
+    {
+       lef[i]=ar[l+i];
+        i++;
+    }
+    long long j=0;
+    while(j<y){
+        rig[j]=ar[m+1+j];
+        j++;
+    }
+    long long a=0,b=0,c=l;
+    while(a<x && b<y)
+    {
+        if(com(lef[a],rig[b])){
+            ar[c]=lef[a];
+            a++;
+        }
+        else{
+            ar[c]=rig[b];
+            b++;
+        }
+
+        c++;
+    }
+    while(a<x){
+    ar[c]=lef[a];
+    a++;
+    c++;
+    }
+    while(b<y){
+    ar[c]=rig[b];
+    c++;
+    b++;
+    }
+
+
+}
+
+void merg(vector<long long>&ar,long long l,long long r,Comparator &com)
+ {
+   if (l>=r) return;
+
+     long long m=l+(r-l)/2;
+     merg(ar,l,m,com);
+     merg(ar,m+1,r,com);
+     
+     mergs(ar,l,m,r,com);
+   
+}
+
+class pairs{
+    public: 
+        long long x;
+        long long y;
+        long long ord;
+};
+
+bool forX(const pairs & p1,const pairs & p2){
+     return p1.x<p2.x;
+}
+
+bool forY(const pairs & p1,const pairs & p2){
+   return p1.y<p2.y;
+}
+long double findsq(const pairs &p1,const pairs &  p2)
+ {
+    return sqrtl(pow(p1.x-p2.x,2)+pow(p1.y-p2.y,2));
+ }
+
+
+class QC{
+    private:
+
+    public:
+
+    
+    void sortRows(long long x,vector<vector<long long>> &vv,long long n)
+    {
+        Comparator comparator(x);
+
+         for(long long i=0;i<n;i++)
+         {
+            
+             merg(vv[i],0,vv[i].size()-1 , comparator);
+         }
+    }
+
+
+     long long M2(vector<long long> &v,vector<long long>  &arr,long long l,long long m,long long  r)
+     {
+        long long i=l,j=m+1,k=l;
+        long long cnt=0;
+
+        while(i<=m &&  j<=r )
+        {
+             if( v[i]<=v[j] )
+              {
+                 arr[k]=v[i];
+                 k++;
+                 i++;
+              }
+              else{ 
+                arr[k]=v[j];
+                k++;
+                j++;
+                cnt +=  (m-i+1);
+              }
+        }
+        for(;i<=m;){
+            arr[k]=v[i];
+            k++;
+            i++;
+        }
+
+        for(;j<=r;){
+            arr[k]=v[j];
+                k++;
+                j++;
+        }
+        for(i=l;i<=r;i++)
+         {
+             v[i]=arr[i];             
+        }
+
+        return  cnt;
+     }
+
+    long  long M1(vector<long long> &v,vector<long long>  &arr,long long l,long long  r)
+    {
+         if(l>=r){
+            return 0  ;
+         }
+         long long m,c=0;
+
+         
+             m=l+(r-l)/2;
+              c+=  M1(v,arr,l,m);
+              c+= M1(v,arr,m+1,r);
+              c+= M2(v,arr,l,m,r);
+         return  c;
+    }
+
+
+    long long countInversions(vector<vector<long long>> &vv,long long n)
+    {
+        vector<long long>v ;
+
+            //divide the elements into 2 halves and sort
+            //while both the lists are not empty
+            //let a and b be elements at current pointers 
+            //put smaller of the two elements in result list 
+            //if b is smaller count =count + no of elements in A
+            //increment ptr in B
+            //else increment ptr in A
+
+            for(auto &x: vv)
+              {
+                
+                    v.insert(v.end(),x.begin(),x.end());
+                 
+            }
+            long long s=v.size();
+            vector<long long> arr(s);
+            
+            
+            long long cc=M1(v,arr,0,s-1);
+            
+             return cc;
+    }
+
+
+    void display(vector<vector<long long>> &vv,long long n)
+    {
+
+        // cout<<"entered"<<endl;
+         for(long long i=0;i<n;i++)
+         {
+              for(long long j=0;j<n;j++)
+              {
+                 cout<<vv[i][j]<<" ";
+              }
+              cout<<endl;
+         }
+         //cout<<endl;
+    }
+
+
+    long double findquick(vector<pairs>& pts,long long l,long long r,pairs& p1,pairs& p2)
+    {
+        long double min_d=1e18;
+        for(long long ii=l;ii<r;ii++){
+          for(long long j=ii+1;j<r;j++){
+            long double d=findsq(pts[ii],pts[j]);
+            
+            if(d<min_d){
+                min_d=d;
+                p1=pts[ii];
+                p2=pts[j];
+              }else if(d == min_d){
+                if(p1.x>pts[ii].x){
+                    p1=pts[ii];
+                    p2=pts[j];
+                }
+                else if(p1.x==pts[ii].x){
+                    if(p2.x>pts[j].x)
+                    {
+                        p1=pts[ii];
+                        p2=pts[j];
+                    }
+                    else if(p2.x==pts[j].x){
+                        if(p1.y>pts[ii].y){
+                            p1=pts[ii];
+                            p2=pts[j];
+                        }
+                    }
+                }
+              }
+          }
+        }
+
+        return min_d;
+    }
+
+
+    long double stpClosest(vector<pairs> &stp, long double d,pairs& p1,pairs& p2){
+         long double min_d=d;
+         sort(stp.begin(),stp.end(),forY);
+         long long s=stp.size();
+         for(long long ii=0;ii<s;ii++){
+            for(long long j=ii+1;j<s && (stp[j].y-stp[ii].y)<=d;j++)
+            {
+              long double distance=findsq(stp[ii],stp[j]);
+              if(distance<min_d){
+                min_d=distance;
+                p1=stp[ii];
+                p2=stp[j];
+              }else if(distance == min_d){
+                if(p1.x>stp[ii].x){
+                    p1=stp[ii];
+                    p2=stp[j];
+                }
+                else if(p1.x==stp[ii].x){
+                    if(p1.y>stp[ii].y){
+                        p1=stp[ii];
+                        p2=stp[j];
+                    }
+                   else if(p2.x>stp[j].x)
+                    {
+                        p1=stp[ii];
+                        p2=stp[j];
+                    }
+                    else if(p2.y>stp[j].y){
+                        
+                            p1=stp[ii];
+                            p2=stp[j];
+                        
+                    }
+                }
+              }
+            }
+         }
+
+         //cout<<min_d<<endl;
+         return min_d;
+    }
+
+    long double closestX(vector<pairs>& pts,long long l,long long r,pairs &p1,pairs& p2 )
+    {
+        if(r-l <=10) 
+        {
+             return findquick(pts,l,r,p1,p2);
+
+        }
+        long long m=(l+r)/2;
+        pairs mpt=pts[m];
+        pairs l_p1,l_p2,r_p1,r_p2;
+        long double dis_left=closestX(pts,l,m,l_p1,l_p2);
+        long double dis_right=closestX(pts,m,r,r_p1,r_p2);
+
+        long double d;
+        p1=l_p1,p2=l_p2;
+        if(dis_left<dis_right || (dis_left==dis_right && (l_p1.x<r_p1.x || (l_p1.x==r_p1.x && l_p1.y<r_p1.y))) || (dis_left==dis_right && (l_p1.x==r_p1.x && l_p1.y==r_p1.y && l_p2.x<r_p2.x || (l_p2.x==r_p2.x && l_p2.y<r_p2.y)))){
+            d=dis_left;
+            p1=l_p1;
+            p2=l_p2;
+        }else{
+            d=dis_right;
+            p1=r_p1;
+            p2=r_p2;
+        }
+         
+        vector <pairs> stp;
+        long long i=l;
+        while(i<r){
+            if(abs(pts[i].x - mpt.x)<= 2*d)
+            {
+                 stp.push_back(pts[i]);
+            }
+            i++;
+        } 
+
+        
+        long double stpd=stpClosest(stp,d,l_p1,l_p2);
+        if(stpd<d)
+        { 
+             d=stpd;
+             p1=l_p1;
+             p2=l_p2;
+        }
+
+        return d;
+    }
+
+
+        void closestPair(vector<long long> &v,long long n){ 
+
+            long long n1=n/2;
+            vector<pairs>pp (n1) ;
+            
+            long long i=0;
+            while(i<n1){
+                pp[i]=  {v[2*i],v[2*i+1],i};
+                i++;
+            }
+
+
+        vector<pairs> spp=pp;
+        sort(spp.begin(),spp.end(),forX);
+        pairs p1=spp[0],p2=  spp[1];
+
+        closestX(spp,0,n1,p1,p2);
+//         long double min_distance=findsq(p1,p2);
+
+        
+//             for(long long i=0;i<n1;i++)
+//             {
+//               for(long long j=i+1;j<n1;j++)
+//               {
+//                 long double dd=findsq(spp[i],spp[j]);
+//                 if(dd<min_distance)
+//                 {
+//                     min_distance=dd;
+//                     p1=spp[i];
+//                     p2=spp[j];
+//                 }
+//                 else if(dd==min_distance){
+//                     if(spp[i].x <p1.x||(spp[i].x==p1.x &&spp[i].y<p1.y) ||(spp[i].x ==p1.x && spp[i].y ==p1.y&&spp[j].x<p2.x) ||
+//                     (spp[i].x==p1.x&&spp[i].y ==p1.y&&spp[j].x==p2.x&&spp[j].y<p2.y) ||
+//                     (spp[i].x==p1.x&&spp[i].y==p1.y&&spp[j].x==p2.x && spp[j].y ==p2.y && spp[i].ord <p1.ord)||
+//                     (spp[i].x==p1.x&&spp[i].y==p1.y&&spp[j].x==p2.x && spp[j].y ==p2.y && spp[i].ord ==p1.ord&& spp[j].ord<p2.ord)) 
+//                     {
+//                         p1=spp[i];
+//                         p2=spp[j];
+//                     }
+//                 }
+//               }
+//             }
+
+          
+                int at1=0,at2=0;
+                for(int i=0;i<v.size();i+=2){
+                    if(v[i]==p1.x&&v[i+1]==p1.y)at1=i;
+                    if(v[i]==p2.x&&v[i+1]==p2.y)at2=i;
+                }
+                if(at1>at2) swap(p1,p2);
+        cout<<p1.x<<" "<<p1.y<<" "<<p2.x<<" "<<p2.y<<endl;
+
+        
+
+    }
+};
+
+
+int main()
+{
+    string s=" ";
+    QC q;
+    vector<vector<long long>> vec;
+    long long sz=0;
+    while(s!="END"){
+        cin>>s;
+        
+        
+        if(s=="CREATE_2D")
+        {
+             long long x;
+             cin>>x;
+             sz=x;
+             vec.assign(x,vector<long long >(x));
+             for(long long i=0;i<x;i++)
+             {
+                for(long long j=0;j<x;j++)
+                {
+                    cin>>vec[i][j];
+                }
+             }
+
+        //      //
+        //      for(long long i=0;i<x;i++)
+        //  {
+        //       for(long long j=0;j<x;j++)
+        //       {
+        //          cout<<vec[i][j]<<" ";
+        //       }
+        //       cout<<endl;
+        //  }
+
+        
+        }
+        if(s=="SORT_2D")
+        {
+            string st;
+            cin>>st;
+            if(st=="ascending")
+             {
+                q.sortRows(1,vec,sz);
+            }
+            else if(st=="descending")
+              {
+               q.sortRows(0,vec,sz);   
+             }
+
+        }
+        if(s=="INVERSION_2D")
+          {
+              cout<<q.countInversions(vec,sz)<<endl;
+        }
+        if(s=="DISPLAY_2D")
+          {
+             q.display(vec,sz);
+          }
+          if(s=="CLOSEST_2D"){
+            long long y;
+            cin>>y;
+            vector<long long>ar(2*y);
+            for(long long i=0;i<2*y;i++)
+            {
+                 cin>>ar[i];
+            }
+            q.closestPair(ar,2*y);
+          }
+    }
+}
