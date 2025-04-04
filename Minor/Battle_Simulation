@@ -1,0 +1,534 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+class QNS{
+    private:
+        int powerLevel;
+        int durability;
+        int energyStorage;
+        int heatLevel;
+
+    public:
+        int is_shut=0;
+        //variable to indicate if suit is destroyed
+        int des=0;
+        //getters
+        int getPowerlevel()const{ return powerLevel; }
+        int getDurability()const{ return durability; }
+        int getEnergyStorage()const{ return energyStorage; }
+        int getHeatLevel()const{ return heatLevel; }
+        int get_isShutdown()const{ return is_shut; }
+        int get_Destroyed()const{ return des; }
+        //update
+        void set_Des(int n){ des=n; }
+        void setPowerlevel(int p){ powerLevel=p; }
+        void setDurability(int d){ durability=d; }
+        void setEnergyStorage(int e){ energyStorage=e; }
+        void setHeatLevel(int h){ heatLevel=max(h,0); }
+        void setShutdown(int n){ is_shut=n; }
+        //constructors
+        QNS(int P,int D,int E,int H)
+        {
+            powerLevel=P;
+            durability=D;
+            energyStorage=E;
+            heatLevel=H;
+            if(P>5000)
+            {
+                powerLevel=5000;
+            }
+        }
+        QNS(const QNS& q)
+        {
+            this->powerLevel=min(q.getPowerlevel(),5000);
+            this->durability=q.getDurability();
+            this->energyStorage=q.getEnergyStorage();
+            this->heatLevel=q.getHeatLevel();
+        }
+        QNS()
+        {
+            powerLevel=1000;
+            durability=500;
+            energyStorage=300;
+            heatLevel=0;
+        }
+
+        //Operator Overloading
+        QNS operator+ (QNS &q2)
+        {
+            //(P1, D1, E1,H1) + (P2, D2, E2,H2) = (P1 + E2, D1 + D2, E1 + P2,H1) 
+
+            QNS q3;
+            q3.setPowerlevel(getPowerlevel()+q2.getEnergyStorage());
+            q3.setDurability(getDurability()+q2.getDurability());
+            q3.setEnergyStorage(getEnergyStorage()+q2.getPowerlevel());
+            q3.setHeatLevel(getHeatLevel());
+            
+            //If it exceeds 5000, then set powerLevel to 5000.
+            if(q3.getPowerlevel()>5000)
+            {
+                q3.setPowerlevel(5000);
+            }
+            return q3;
+
+        }
+        QNS & operator- (int X)
+        {
+            //(P, D, E, H) - X = (P, D - X, E + X, H + X)
+            setDurability(getDurability()-X);
+            setEnergyStorage(getEnergyStorage()+X);
+            setHeatLevel(getHeatLevel()+X);
+
+            if(getDurability() <= 0)
+            {
+                set_Des(1);
+            }
+            if(getHeatLevel()>500)
+            {
+                setShutdown(1);
+            }
+            return *this;
+            //If durability = 0, the suit is destroyed.
+            //If heatLevel > 500, the suit shuts down.
+        }
+        QNS & operator*(int X)
+        {
+            //(P, D, E, H) * X = (P+(P * (X/100)), D, E + 5X, H + X)
+            int p=getPowerlevel();
+            int y=p+((p*X)/100);
+            int e=getEnergyStorage();
+            e=e+(5*X);
+            int h=getHeatLevel();
+            h=h+X;
+            setPowerlevel(min(y,5000));
+            setEnergyStorage(e);
+            setHeatLevel(h);
+
+
+            if(getHeatLevel()>500)
+            {
+                setShutdown(1);
+                //the suit shuts down
+            }
+            //If heatLevel > 500, the suit shuts down.
+            return *this;
+        }
+        QNS& operator/(int X)
+        {
+            //(P, D, E, H) / X = (P, D + X, E, H - X)
+            int d=getDurability();
+            d=d+X;
+            int h=getHeatLevel();
+            h=h-X;
+            setDurability(d);
+            setHeatLevel(h);
+
+
+            if(getHeatLevel()<0)
+            {
+                setHeatLevel(0);
+            }
+            return *this;
+        }
+        //Function Overloading
+        void boostPower(int factor)
+        {
+            //* operator
+          (*this)=(*this)*factor;
+        }
+        void boostPower(QNS otherSuit)
+        {
+            //+ operator
+            (*this)+otherSuit;
+        }
+
+        //Comparison Overloading
+        bool operator == (QNS & q2)
+        {
+            int p=q2.getPowerlevel();
+            int d=q2.getDurability();
+            if(p==d)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        bool operator <(QNS& q2)
+        {
+            int x=this->getPowerlevel();
+            int y=this->getDurability();
+            int z=q2.getPowerlevel();
+            int w=q2.getDurability();
+            if(x+y<z+w)
+            {
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+        void printSiut_details()
+        {
+            cout<<powerLevel<<" "<<durability<<" "<<energyStorage<<" "<<heatLevel<<endl;
+        }
+};
+
+
+class Avenger
+{
+    private:
+        string name;
+        QNS suit;
+        int attackStrength;
+
+    public:
+
+        QNS& get_suit()
+        {
+            return suit;
+        }
+        void setSuit(QNS &s){
+            suit=s;
+        }
+        string get_name()
+        {
+            return name;
+        }
+        Avenger(){}
+        Avenger(string avName, QNS avSuit, int strength)
+        {
+            name=avName;
+            suit=avSuit;
+            attackStrength=strength;
+        }
+        void attack(Avenger& enemy)
+        {
+            enemy.suit-attackStrength;
+
+        }
+        void upgradeSuit(QNS & q1)
+        {
+        (*this).suit=suit+q1;
+            //If any extra suit is left out, transfer power to their suit in First come First serve order 
+        }
+        void repair(int x)
+        {
+            int a=suit.getDurability();
+            a=a+x;
+            suit.setDurability(a);
+        }
+        void printStatus()
+        {
+            cout<<this->name<<" "<<suit.getPowerlevel()<<" "<<suit.getDurability()<<" "<<suit.getEnergyStorage()<<" "<<suit.getHeatLevel()<<endl;
+        }
+        // Avenger get_Avenger(string name)
+        // {
+
+        // }
+        bool operator==(Avenger* other){
+            return name==other->name;
+        }
+
+        void boost(int x){
+           (*this).suit=suit*x;
+        }
+};
+
+
+class Battle
+{
+    private:
+        vector<Avenger>heroes;
+        vector<Avenger>enemies;
+        vector<string>battleLog;
+    public:
+    bool inbattle;
+    queue<QNS> q;
+    Avenger avg;
+    queue<Avenger> aq;
+        void enter_details_battleLog(string s)
+        {
+            battleLog.push_back(s);
+        }
+        void startBattle()
+        {
+            while(1){
+            string s1;
+                cin>>s1;
+                if(s1=="Attack")
+                {
+                    string s2,s3;
+                    cin>>s2>>s3;
+                    string s4;
+                    s4+=s2+" "+"attacks"+" "+s3;
+                    Avenger* a3;
+                    QNS* q3,*q2;
+                    Avenger* p=get_avg_by_name(s2);
+                    a3 =get_avg_by_name(s3);
+                    q2=get_avg_siut(s2);
+                    q3=get_avg_siut(s3);
+                    if(q2->getDurability()>0 && q2->getHeatLevel()<=500)
+                    {
+                        if(q3->getDurability()>0)
+                        {   
+                            p->attack(*a3);
+                            this->enter_details_battleLog(s4);
+                            if(q3->getDurability()>0 && q3->getHeatLevel()>500)
+                            {
+                                string s4=s3+" "+"suit overheated";
+                                this->enter_details_battleLog(s4);
+                            }
+                            if(q3->getDurability()<=0)
+                            {
+                                string s4=s3+" "+"suit destroyed";
+                                this->enter_details_battleLog(s4);
+                                inbattle=false;
+                            }
+                            
+
+                        }
+                    }
+                }
+                if(s1=="Repair")
+                {
+                    string s2;
+                    cin>>s2;
+                    int x;
+                    cin>>x;
+                    QNS* suit1=this->get_avg_siut(s2);
+                    int d=suit1->getDurability();
+                    suit1->setDurability(d+x);
+                    int t=suit1->getHeatLevel();
+                    suit1->setHeatLevel(t-x);
+                    string s3=s2+" "+"repaired";
+                    this->enter_details_battleLog(s3);
+                    
+                    
+                }
+                if(s1=="BoostPowerByFactor")
+                {
+                    string s2;
+                    cin>>s2;
+                    int y;
+                    cin>>y;
+                    Avenger* aa=get_avg_by_name(s2);
+                   aa->boost(y);
+
+                    string s4=s2+" "+"boosted";
+                    this->enter_details_battleLog(s4);
+                    if(aa->get_suit().getHeatLevel()>500)
+                    {
+                        string s5=s2+" "+"suit overheated";
+                        this->enter_details_battleLog(s5);
+                        
+                    }
+                }
+                if(s1=="BoostPower")
+                {
+                    string s2;
+                    cin>>s2;
+                    int p,d,e,h;
+                    cin>>p>>d>>e>>h;
+                    QNS othersuit(p,d,e,h);
+                    QNS* suit1=this->get_avg_siut(s2);
+                    suit1->boostPower(othersuit);
+                    string s4=s2+"boosted";
+                    this->enter_details_battleLog(s4);
+                    if(suit1->getHeatLevel()>500)
+                    {
+                        string s5=s2+" "+"suit overheated";
+                        this->enter_details_battleLog(s5);
+                    }
+
+                }
+                if(s1=="AvengerStatus")
+                {
+                    string s2;
+                    cin>>s2;
+                    Avenger* aa1=get_avg_by_name(s2);
+                    aa1->printStatus();
+
+                }
+                if(s1=="Upgrade")
+                {
+                    string s2;
+                    cin>>s2;
+                    //QNS suit1=this->get_avg_siut(s2);
+                    Avenger* avg= this->get_avg_by_name(s2);
+                    if(!q.empty() && avg->get_suit().getDurability()>0)
+                    {
+                        avg->upgradeSuit(q.front());
+                        q.pop();
+                        string s3=s2+" "+"upgraded";
+                        this->enter_details_battleLog(s3);
+                    }
+                    else{
+                        string s4=s2+" "+"upgrade Fail";
+                        this->enter_details_battleLog(s4);
+                    }
+                    
+
+
+                }
+                if(s1=="PrintBattleLog")
+                {
+                    this->printBattleLog();
+                }
+                if(s1=="BattleStatus")
+                {
+                    int r=this->Result();
+                    if(r==1)
+                    {
+                        cout<<"heroes are winning"<<endl;
+                    }
+                    else if(r==-1)
+                    {
+                        cout<<"enemies are winning"<<endl;
+                    }
+                    else{
+                        cout<<"tie"<<endl;
+                    }
+                }
+                if(s1=="End"){
+                    break;
+                }
+            }
+        }
+        void printBattleLog()
+        {
+            for(auto x:battleLog)
+            {
+                cout<<x<<endl;
+            }
+        }
+        int Result()
+        {
+            int a=0,e=0;
+            for(auto& x:heroes)
+            {
+                QNS y=x.get_suit();
+                int a1=y.getDurability();
+                int a2=y.getPowerlevel();
+                if(a1>0){
+                    a+=a1+a2;
+                   // cout<<"heroes "<<a1<<" "<<a2<<" "<<a<<endl;
+                } 
+            }
+            for(auto& x:enemies)
+            {
+                auto y=x.get_suit();
+                int e1=y.getDurability();
+                int e2=y.getPowerlevel();
+                if(e1>0 ){
+                    e+=e1+e2;
+                   // cout<<"eniemes "<<e1<<" "<<e2<<" "<<e<<endl;
+                }
+            }
+            if(a>e){ return 1; }
+            else if(a<e){ return -1; }
+            else{//cout<<a<<" "<<e<<endl;
+                //cout<<heroes.size()<<" "<<enemies.size()<<endl;
+                 return 0; }
+        }
+        void add_Heroes(Avenger & a)
+        {
+            heroes.push_back(a);
+        }
+        void add_Enemies(Avenger & a)
+        {
+            enemies.push_back(a);
+        }
+        QNS* get_avg_siut(string s)
+        {
+            for(auto& x:heroes)
+            {
+                if(x.get_name()==s)
+                {
+                    return &x.get_suit();
+
+                }
+            }
+            for(auto& y:enemies)
+            {
+                if(y.get_name()==s)
+                {
+                    return &y.get_suit();
+                }
+            }
+            return nullptr;
+        }
+        Avenger* get_avg_by_name(string s)
+        {
+            for(auto& x:heroes)
+            {
+                if(x.get_name()==s)
+                {
+                    return &x;
+
+                }
+            }
+            for(auto& y:enemies)
+            {
+                if(y.get_name()==s)
+                {
+                    return &y;
+                }
+            }
+            return nullptr;
+        }
+    };
+
+
+
+int main()
+{
+    Battle battle;
+    int k,m,n;
+    cin>>k>>n>>m;
+    for(int i=0;i<k;i++)
+    {
+        int  P,D,E,H;
+        cin>>P>>D>>E>>H;
+        QNS q1(P,D,E,H);
+       battle.q.push(q1);
+    }
+    for(int i=0;i<n+m;i++)
+    {
+        string name;
+        int attackStrength;
+        cin>>name>>attackStrength;
+        if(!battle.q.empty())
+        {
+            Avenger a(name,battle.q.front(),attackStrength);
+            battle.q.pop();
+            battle.aq.push(a);
+            if(i<n)
+            {
+                battle.add_Heroes(a);
+            }
+            else{
+                battle.add_Enemies(a);
+            }
+        }
+        else{
+            cout<<name<<" "<<"is out of fight"<<endl;
+        }
+
+    }
+        string s;
+        cin>>s;
+        if(s=="BattleBegin")
+        {
+            battle.startBattle();
+        }
+        
+        
+    return 0;
+}
