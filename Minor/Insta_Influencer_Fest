@@ -1,0 +1,405 @@
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <queue>
+#include <map>
+#include <algorithm>
+
+using namespace std;
+
+class Comparator{
+    public:
+        Comparator(int x):val(x) {};
+        bool operator()(int p, int q)const{
+         return (val==1)?  (p  < q): (p > q );
+    }
+    private: 
+         int val;
+};
+
+class GraphAlgorithm{
+    public:
+        map<int,vector<int>> edg;
+        int N;
+        vector<int> hype;
+        GraphAlgorithm(map<int,vector<int>> &edges,int N,vector<int>&hypes)
+        {
+            edg=edges;
+            this->N=N;
+            hype=hypes;
+        }
+
+        virtual void Query() = 0;
+};
+
+class isCycle:public GraphAlgorithm{
+    public:
+
+        isCycle(map<int,vector<int>>&edges,int n,vector<int>&hype_s):GraphAlgorithm(edges,n,hype_s){};
+        //Detects cycles in the graph.
+
+
+        bool is_it_cyclic(map<int,vector<int>> &edges,int y,vector<bool> &visited,vector<bool> &recursivestack){
+            //do dfs search to see wheather there is a cycle or not
+            if(recursivestack[y]==true)
+               {
+                return true;
+              }
+              if(visited[y])
+              {
+                return false;
+                 }
+
+               visited[y]=true;
+              recursivestack[y]=true;
+              for(int z:edges[y])
+              {
+                if(!visited[z] &&  is_it_cyclic(edges,z,visited,recursivestack)){
+                    return true;
+                }
+                else if(recursivestack[z]){
+                    return true;
+                }
+              }
+
+              recursivestack[y]=false;
+              return false;
+        }
+
+        void Query()
+        {
+            int v=edg.size();
+            vector<bool> visited(N+1,false);
+            vector<bool> recursivestack(N+1,false);
+
+            for(int i=1;i<=N;i++)
+            {
+                if(!visited[i] &&is_it_cyclic(edg,i,visited,recursivestack) )
+                {
+                     cout<<"YES"<<endl;
+                    return;
+                }
+            }
+            cout<<"NO"<<endl;
+             return ;
+        }
+};
+
+class indepComponent:public GraphAlgorithm{
+    public:
+    indepComponent(map<int,vector<int>>&edges,int n,vector<int> &hpe_s):GraphAlgorithm(edges,n,hpe_s){};
+        //dfs
+        void dfs_1(int nod,vector<bool>& visit,stack<int> &st)
+        {
+            visit[nod]=true;
+            for(int x:edg[nod]){
+                  if(!visit[x]){
+                    dfs_1(x,visit,st);
+                }
+            }
+
+              st.push(nod);
+        }
+
+        void dfs_2(int nod,map<int,vector<int>> &art,int &size,vector<bool>& visit)
+        {
+            visit[nod]=true;
+             size++;
+            for(int x:art[nod])  {
+                  if(!visit[x]){
+                    dfs_2(x,art,size,visit);
+                  }
+            }
+        }
+        //Computes SCCs and their cardinalities.
+
+        void Query()
+        {
+            map<int,vector<int>> art;
+             for(int i=1;i<=N;i++)
+              {
+                art[i];
+            }
+            for(auto itr=edg.begin();itr!=edg.end();itr++){
+                int u=itr->first;
+                for(int v:itr->second){
+                    art[v].push_back(u);
+                }
+            }
+
+
+            stack<int> st;
+            vector<bool> vist(N+1,false);
+            for(int j=1;j<=N;j++) {
+                  if(!vist[j]){
+                    dfs_1(j,vist,st);
+                  }
+            }
+
+              vist.assign(N+1,false);
+              int n1=0,n2=0;
+            while(!st.empty())
+             {
+                int nod=st.top();
+                st.pop();
+
+                if(!vist[nod]){
+                    int size=0;
+                    dfs_2(nod,art,size,vist);
+                    n1++;
+                    n2=max(n2,size);
+                }
+             }
+             cout<<n1<<" "<<n2<<endl;
+        }
+};
+
+class validOrder: public GraphAlgorithm{
+    public:
+    validOrder(map<int,vector<int>>&edges,int n,vector<int>&hype_s):GraphAlgorithm(edges,n,hype_s){}
+        //Computes a valid topological order if possible.
+
+
+        void Query()
+        {
+            vector<int> ver_in(N+1,0);
+
+              for(auto itr=edg.begin();itr!=edg.end();itr++){
+                int u=itr->first;
+                for(int v:itr->second){
+                    ver_in[v]++;
+                }
+            }
+
+            priority_queue<int,vector<int>,greater<int>> prior_que;
+             for(int i=1;i<=N;i++)
+              {
+                if(ver_in[i]==0)
+                {
+                    prior_que.push(i);
+                }
+            }
+            vector<int> fin;
+             while(!prior_que.empty())
+            {
+               int nod=prior_que.top();
+                prior_que.pop();
+                fin.push_back(nod);
+               for(int x:edg[nod])
+                 {
+                     ver_in[x]--;
+                   if(ver_in[x]==0)
+                    {
+                      prior_que.push(x);
+                   }
+               }
+
+            }
+
+            if(fin.size()!=N){
+                cout<<"NO"<<endl;
+            }
+            else{
+                for(int y:fin){
+                    cout<<y<<" ";
+                }
+                cout<<endl;
+            }
+        }
+};
+
+class maxHype: public GraphAlgorithm{
+    public:
+    maxHype(map<int,vector<int>>&edges,int n,vector<int>&hype_s):GraphAlgorithm(edges,n,hype_s){}
+    
+    //Computes maximum hype points on DAGs.
+
+        
+        void dfs_2(int nod,map<int,vector<int>>&rev_Graph,vector<bool>&vist,vector<int>& array) {
+            vist[nod]=true;
+            array.push_back(nod);
+            for(int x:rev_Graph[nod]){
+              if(!vist[x]){
+                     dfs_2(x,rev_Graph,vist,array )  ;
+                }
+             }
+        }
+
+        void dfs_1(int nod,vector<bool>& vist,stack<int>&st){
+            vist[nod]=true;
+            for(int x:edg[nod]){
+                if(!vist[x]){
+                  dfs_1(x,vist,st);
+                }
+            }
+            st.push(nod);
+        }
+
+        void for_SSCs(map<int,vector<int>>&c_Graph,vector<int>& c_Hype,vector<int>& sccID){
+            map<int,vector<int>>graph_rev;
+
+            for(const auto & x:edg){
+                 int u=x.first;
+                 const vector<int>& y=x.second;
+                 for(int v:y){
+                    graph_rev[v].push_back(u);
+                 }
+            }
+
+            stack<int>st;
+            vector<bool>visit(N+1,false);
+            for(int i = 1;i<=N;i++) {
+                 if(!visit[i]){
+                   dfs_1(i,visit,st);
+               }
+            }
+
+            visit.assign(N+1,false);
+            int cnt=0;
+              sccID.assign(N+1,-1);
+              c_Hype.clear();
+            while(!st.empty()){
+                int nod=st.top();
+                 st.pop();
+                if(!visit[nod])
+                 {
+                    vector<int> temp;
+                    dfs_2(nod,graph_rev,visit,temp);
+                    int sum=0;
+                    for(int x:temp){
+                        sccID[x]=cnt;
+                        sum+=hype[x-1];
+                    }
+                     c_Hype.push_back(sum);
+                    cnt++;
+                }
+
+            }
+
+            c_Graph.clear();
+            for(int u=1;u<=N;u++){
+                    auto it=edg[u].begin();
+                    while(it!=edg[u].end())
+                     {
+                         int v=*it;
+                        if(sccID[u]!=sccID[v]){
+                             c_Graph[sccID[u]].push_back(sccID[v]);
+                        }
+                        ++it;
+                    }
+                }
+        }
+
+
+
+        void Query()
+        {
+            map<int,vector<int>>c_graph;
+            vector<int>c_hype,sccID;
+            for_SSCs(c_graph,c_hype,sccID);
+
+            int num=c_hype.size();
+               vector<int>in_deg(num,0),maxHype(num,0);
+
+            for(const auto &x:c_graph)
+             {
+                int u=x.first;
+                  const vector<int>& y =x.second;
+                for(int v:y)
+                 {
+                    in_deg[v]++;
+               }
+            }
+            queue<int>q;
+            for(int i=0;i<num;i++)
+            {
+                maxHype[i]=c_hype[i];
+                if(in_deg[i]==0){
+                    q.push(i);
+                }
+            }
+            int m_hype=0;
+            while(!q.empty())
+            {
+                int nod=q.front();
+                q.pop();
+                 m_hype=max(maxHype[nod],m_hype);
+                for(int x:c_graph[nod])
+                {
+                    maxHype[x]=max(maxHype[x],maxHype[nod]+c_hype[x]);
+                    in_deg[x]--;
+                    if(in_deg[x]==0)
+                    {
+                        q.push(x);
+                    }
+                }
+                m_hype=max(m_hype,maxHype[nod]);
+            }
+            cout<<m_hype<<endl;
+
+
+
+        }
+        
+};
+
+
+    
+
+int main()
+{
+    
+    int N,M;
+    cin>>N>>M;
+    vector<int> arr(N);
+    for(int i=0;i<N;i++)
+    {
+        cin>>arr[i];
+    }
+
+    map<int,vector<int>> adj_list;
+
+    for(int i=0;i<M;i++)
+    {
+        int u,v;
+        cin>>u>>v;
+        adj_list[u].push_back(v);
+
+    }
+
+
+
+
+    int Q;
+    cin>>Q;
+    while(Q--)
+    {
+        int x;
+        cin>>x;
+        if(x==1)
+        {
+            //output yes or no
+            isCycle ob(adj_list,N,arr);
+            ob.Query();
+        }
+        else if(x==2)
+        {
+            // Output two integers separated by space:
+            indepComponent ob(adj_list,N,arr);
+            ob.Query();
+
+
+        }
+        else if(x==3)
+        {
+            //Output a valid topological order
+            validOrder ob(adj_list,N,arr);
+            ob.Query();
+        }
+        else if(x==4){
+            //output maximum total hype score achievable
+            maxHype ob(adj_list,N,arr);
+            ob.Query();
+        }
+    }
+}
