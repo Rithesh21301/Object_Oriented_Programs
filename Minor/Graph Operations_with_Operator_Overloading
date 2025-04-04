@@ -1,0 +1,309 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <set>
+#include <map>
+#include <queue>
+#include <unordered_map>
+using namespace std;
+
+class Graph{
+    public:
+        Graph()
+        {
+            this->N=0;
+            this->M=0;
+        }
+        Graph(int N,int M)
+        {
+            this->N=N;
+            this->M=M;
+        }
+        void setNoOfVer(int n)
+        {
+            N=n;
+        }
+        void setNoOfEdges(int m)
+        {
+            M=m;
+        }
+        int get_no_vertices(){ return N; }
+        int get_no_edges(){ return M; }
+
+        
+
+        
+        Graph operator+(const Graph& g2)
+        {
+            int n=max(N,g2.N);
+            Graph g3(n,0);
+            for(const auto& x:edges)
+            {
+                g3.edges[x.first]=x.second;
+            } 
+            for(const auto& x:g2.edges)
+            {
+                g3.edges[x.first].insert(x.second.begin(),x.second.end());
+            }
+            g3.setNoOfVer(n);
+            int m=0;    
+            for(const auto& x:g3.edges)
+            {
+                m+=x.second.size();
+            }
+            m/=2;
+            g3.setNoOfEdges(m);
+            return g3;
+        }
+
+        Graph operator -(const Graph& g2)
+        {
+            Graph g3;
+            for(const auto& x:edges)
+            {
+                if(g2.edges.find(x.first)!=g2.edges.end())  
+                {
+                    set<int> set1;
+                    for(const int & y:x.second)
+                    {
+                        if(g2.edges.at(x.first).find(y)!=g2.edges.at(x.first).end())
+                        {
+                            set1.insert(y);
+                        }
+                    }
+                    
+                        g3.edges[x.first]=set1;
+                }
+
+            }
+            for(const auto& x:edges)
+            {
+                if(g3.edges.find(x.first)==g3.edges.end())
+                {
+                    g3.edges[x.first]={};
+                }
+            }
+            for(const auto& x:edges)
+            {
+                if(g3.edges.find(x.first)==g3.edges.end())
+                {
+                    g3.edges[x.first]={};
+                }
+            }
+            int n=g3.edges.size();
+            g3.setNoOfVer(n);
+
+            int m=0;
+            for(const auto& x:g3.edges)
+            {
+                m+=x.second.size();
+            }
+            m/=2;
+            g3.setNoOfEdges(m);
+
+            return g3;
+        }
+
+ 
+
+
+        Graph operator! ()
+        {
+            Graph g2(N,0);
+            for(int i=0;i<N;i++)
+            {
+                for(int i=0;i<N;i++)
+                {
+                    g2.edges[i];
+                }
+                for(int j=0;j<N;j++)
+                {
+                    if(i!=j && (edges.find(i)==edges.end() ||   edges.at(i).find(j)==edges.at(i).end()))
+                    {
+                        g2.edges[i].insert(j);
+                    }
+                }
+            }
+
+            int m=0;
+            for(const auto& x:g2.edges)
+            {
+                m+=x.second.size();
+            }
+            m/=2;
+            g2.setNoOfEdges(m);
+
+            return g2;
+        }
+
+        
+        bool isReachable(int a,int b)
+        {
+            if(a==b){ return true; }
+            if(edges.find(a)==edges.end() || edges.find(b)==edges.end())
+            {
+                return false;
+            }
+            set<int> visited;
+            queue<int>q;
+            q.push(a);
+            visited.insert(a);
+            while(!q.empty())
+            {
+                int no=q.front();
+                q.pop();
+                if(edges.find(no)!=edges.end())
+                {
+                    for(int x:edges[no])
+                {
+                    if(x==b){ return true; }
+                    if(visited.find(x)==visited.end())
+                    {
+                        q.push(x);
+                        visited.insert(x);
+                    }
+                }   
+                }
+                
+            }
+            return  false;
+        }
+        void addEdge(int a,int b)
+        {
+            edges[a].insert(b);
+            edges[b].insert(a);
+        }
+    void removeEdge(int a,int b)
+    {
+            auto itr1=edges.find(a);
+            auto itr2=edges.find(b);
+            if(itr1!=edges.end()&&itr2!=edges.end())
+            {
+                if(itr1->second.find(b) !=itr1->second.end())
+                {
+                    edges[a].erase(b);
+                }
+                if(a!=b && itr2->second.find(a) !=itr2->second.end() )
+                {
+                    edges[b].erase(a);
+                }
+            }
+            
+    }
+
+
+        friend istream& operator >> (istream& in,Graph& g1);
+        friend std::ostream& operator <<(std::ostream& s, Graph& g);
+    private:
+        int N,M;
+        map<int,set<int>>edges;
+        vector<int>ver;
+};
+
+std::istream& operator >>(std::istream& in,Graph &g1)
+        {
+            int V1,V2,v1,v2;
+            in>>V1>>V2;
+            g1.setNoOfEdges(V2);
+            g1.setNoOfVer(V1);
+            for(int i=0;i<V1;i++)
+            {
+                g1.edges[i]={};
+            }
+            for(int i=0;i<g1.get_no_edges();i++)
+            {
+                in >> v1>>v2;
+                g1.edges[v1].insert(v2);
+                g1.edges[v2].insert(v1);
+            }
+            return in;
+        }
+
+std::ostream& operator <<(std::ostream& s, Graph& g)
+        {
+            set<int> noVer;
+            for(const auto& x:g.edges)
+            {
+                noVer.insert(x.first);
+                for(auto y:x.second)
+                {
+                    noVer.insert(y);
+                }
+            }   
+            for(int x:noVer)
+            {
+                s<<"Vertex "<<x<<": ";
+                if(g.edges.find(x)!=g.edges.end())
+                {
+                    for(auto y:g.edges.at(x))
+                    {
+                        s<<y<<" ";
+                    }
+                }
+                s<<endl;
+            }
+            return s;
+        }
+
+
+int main(){
+    string st;
+    cin>>st;
+    Graph g1;
+    cin>>g1;
+    string s=" ";
+
+    while(s!="end")
+    {
+        cin>>s;
+        if(s=="union")
+        {
+            string str;
+            cin>>str;
+            Graph g2;
+            cin>>g2;
+           g1= g1+g2;
+        }
+        if(s=="intersection")
+        {
+            string str;
+            cin>>str;
+            Graph g3;
+            cin>>g3;
+           g1= g1-g3;
+        }
+        if(s=="complement")
+        {
+             g1=!g1;
+        }
+        if(s=="isReachable")
+        {
+            int x,y;
+            cin>>x>>y;
+            bool z=g1.isReachable(x,y);
+            if(z)
+            {
+                cout<<"Yes"<<endl;
+            }
+            else{
+                cout<<"No"<<endl;
+            }
+        }
+        if(s=="add_edge")
+        {
+            int a,b;
+            cin>>a>>b;
+            g1.addEdge(a,b);
+        }
+        if(s=="remove_edge")
+        {
+            int a,b;
+            cin>>a>>b;
+            g1.removeEdge(a,b);
+        }
+        if(s=="printGraph")
+        {
+            cout<<g1;
+        }
+    }
+}
