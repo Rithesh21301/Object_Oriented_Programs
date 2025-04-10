@@ -1,0 +1,244 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <sstream>
+using namespace std;
+
+
+
+class Card{
+    private:
+
+    public:
+            virtual long long area()const=0;
+            virtual string toString()const= 0;
+            virtual ~Card(){}
+
+
+            virtual bool operator<(const Card& c2)const{
+                return this->area()<c2.area();
+            }
+
+
+};
+
+
+
+
+class SQUARE:public Card{
+
+    private:
+        long long edge;
+
+    public:
+        SQUARE(long long e):edge(e) {}
+
+        long long area()const{
+            return (edge*edge);
+        }
+
+
+
+        string toString()const{
+            return "SQUARE "+to_string(edge);
+        }
+};
+
+class RECTANGLE:public Card{
+
+    private:
+        long long length,breadth;
+
+    public:    
+
+        RECTANGLE(long long l,long long b){
+            length=l;
+            breadth=b;
+        }
+
+        long long area()const{
+            return (length*breadth);
+        }
+
+        string toString()const override{
+            return "RECTANGLE "+to_string(length)+" "+to_string(breadth);
+        }
+};
+
+class TRIANGLE: public Card {
+
+    private:
+        long long base,height;
+
+    public:   
+        
+        TRIANGLE(long long b,long long h){
+            base=b;
+            height=h;
+        }
+
+        long long area()const{
+            return (base*height)/2 ;
+        }
+
+        string toString() const override {
+            return "TRIANGLE "+to_string(base)+" "+to_string(height);
+        }
+
+};
+
+class CardOrganizer{
+    private:
+        vector<Card*> all_cards;
+        vector<vector<Card*>> piles;
+        vector<long long> pileTops;
+        vector<long long>cardAreas;
+    public:
+
+    ~CardOrganizer() {
+        for(auto c:all_cards){
+            delete c;
+        }
+    }
+    
+        void addCard(Card* c1){
+
+            //Finds a suitable pile and inserts the card in it.
+            long long a=c1->area();
+            long long idx=all_cards.size();
+
+            all_cards.push_back(c1);
+            cardAreas.push_back(a);
+
+
+            auto it=lower_bound(pileTops.begin(),pileTops.end(),a,[&](long long i, long long val){
+                return cardAreas[i]<val;
+            });
+
+            long long pos=distance(pileTops.begin(),it);
+
+            if(it!=pileTops.end()){
+                piles[pos].push_back(c1);
+                pileTops[pos]=idx;
+            }
+            else{
+                piles.emplace_back();
+                piles.back().push_back(c1);
+                pileTops.push_back(idx);
+            }
+
+
+        }
+
+
+        size_t getPileCount() const {
+
+            //Returns the number of piles created so far.
+            return piles.size();
+        }
+
+
+        vector<Card*> getLIS() const {
+
+            //Returns a valid LIS based on pile tops.
+            int n = all_cards.size();
+            vector<int> dp;               // stores indices of last elements in subsequence
+            vector<int> parent(n, -1);    // parent[i] = previous index in LIS
+            vector<int> ends;             // stores indices of pile tops
+            vector<int> dp_values(n);     // cache area for each card
+        
+            for (int i = 0; i < n; ++i) {
+                dp_values[i] = all_cards[i]->area();  // cache the area
+            }
+        
+            auto cmp = [&](int a, int b) {
+                return dp_values[a] < dp_values[b];
+            };
+        
+            for (int i = 0; i < n; ++i) {
+                auto it = lower_bound(ends.begin(), ends.end(), i, cmp);
+                int idx = it - ends.begin();
+        
+                if (it == ends.end()) {
+                    ends.push_back(i);
+                } else {
+                    *it = i;
+                }
+        
+                if (idx > 0) {
+                    parent[i] = ends[idx - 1];
+                }
+            }
+        
+            // Reconstruct LIS
+            vector<Card*> result;
+            for (int i = ends.back(); i != -1; i = parent[i]) {
+                result.push_back(all_cards[i]);
+            }
+            reverse(result.begin(), result.end());
+            return result;
+        }
+        
+
+        
+};
+
+
+int main()
+{
+    long long q;
+    cin>>q;
+    bool computed=false;
+    vector<Card*> lis;
+    CardOrganizer org;
+
+    while(q--){
+        long long t;
+        cin>>t;
+        if (t==1){
+            string st;
+            cin>>st;
+            computed=false;
+            if(st=="SQUARE"){
+                long long e;
+                cin>>e;
+                org.addCard(new SQUARE(e));
+            }
+            else if(st=="RECTANGLE"){
+                long long l,b;
+                cin>>l>>b;
+                org.addCard(new RECTANGLE(l,b));
+
+
+            }
+            else if(st=="TRIANGLE")
+            {
+                long long b,h;
+                cin>>b>>h;
+
+                org.addCard(new TRIANGLE(b,h));
+            }
+        }
+        else if(t==2)
+        {
+            //Prlong longs the current minimum number of piles needed to organize the cards based on the game's placement rules.
+            cout<<org.getPileCount()<<"\n";
+        }
+        else if(t==3)
+        {
+            //Prlong longs any valid Longest Increasing Subsequence (LIS)
+            if(!computed){ lis=org.getLIS();computed=true;}
+            
+            ostringstream out;
+            out<<lis.size()<<"\n";
+            for (auto*c:lis)
+            out<<c->toString()<<"\n";
+            cout<<out.str();
+
+        }
+        
+    }
+
+    return  0;
+}
