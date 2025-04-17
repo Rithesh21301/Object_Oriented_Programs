@@ -1,0 +1,281 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <unordered_map>
+using namespace std;
+
+int for_rank(const string& r){
+    if (r=="SENAPATI") {
+        return 3; }
+    if (r=="DANDANAYAKA") {return 2;}
+    return 1;
+}
+
+
+class Comparator{
+    public:
+        Comparator(int x):val(x) {};
+    bool operator()(int p,int q)const{
+         return (val==1)?  (p  < q): (p>q );
+    }
+    private: 
+         int val;
+};
+
+
+
+
+class Sentinel{
+        private:
+             int id;
+            string name;
+            string rank;
+
+        public:
+        static vector<Sentinel*> all_sentinels;
+            Sentinel(){}
+            Sentinel(int i,string n,string r){
+                id=i;
+                name=n;
+                rank=r;
+            }
+
+            virtual int countHigherRanked()=0;
+            int get_id(){ return id; }
+            string get_name(){ return name; }
+            string get_rank(){ return rank; }
+
+};
+vector<Sentinel*> Sentinel::all_sentinels;
+
+
+class SentinelComparator{
+    private:
+        Comparator cmp;
+public:
+    SentinelComparator(int ord):cmp(ord){}
+
+    bool operator()(Sentinel* s1, Sentinel* s2) const {
+        int r1=for_rank(s1->get_rank());
+        int r2= for_rank(s2->get_rank());
+
+        if (r1 != r2) {
+            return cmp(r1, r2); // Compare rank levels using Comparator
+        }
+        return s1->get_id() < s2->get_id(); // If ranks equal, sort by ID ascending
+    }
+};
+
+class Senapati:public Sentinel{
+    public:
+    
+    Senapati(int i,string n,string r):Sentinel(i,n,r){}
+    
+            int countHigherRanked()
+            {
+                     int my_rank=for_rank(get_rank());
+                     int count=0;
+                    for (auto s:all_sentinels) {
+                         if (for_rank(s->get_rank())>my_rank)
+                        {
+                              count++;
+                        }
+                    }
+                    return count;
+                
+            }
+};
+
+class Dandanayaka:public Sentinel{
+    private:
+
+    public:
+        Dandanayaka(int i, string n, string r) : Sentinel(i, n, r) {}
+        int countHigherRanked()
+            {
+                     int my_rank=for_rank(get_rank());
+                     int count=0;
+                    for (auto s:all_sentinels) {
+                         if (for_rank(s->get_rank())>my_rank)
+                        {
+                              count++;
+                        }
+                    }
+                    return count;
+                
+            }  
+};
+
+class Chaturangini:public Sentinel{
+    private:
+
+    public:
+         Chaturangini(int i, string n, string r) : Sentinel(i, n, r) {}
+        int countHigherRanked()
+        {
+                 int my_rank=for_rank(get_rank());
+                 int count=0;
+                for(auto s:all_sentinels) {
+                 if (for_rank(s->get_rank())>my_rank)
+                   {
+                      count++;
+                }
+            }
+            return count;
+        
+    }
+};
+
+template<typename NodeType>
+class Kingdom{
+    private:
+        vector<NodeType*>a;
+        unordered_map<int,vector<int>> mp;
+        vector<vector<int>> tree;
+        vector<vector<int>> dp;
+        unordered_map<int, int> rank_count; // rank level -> count
+        unordered_map<int, int> higher_ranked; // id -> count of higher ranked
+
+
+        
+    public:
+        Kingdom(){};
+
+        void add_edge(int u,int v){
+            mp[u].push_back(v);
+           mp[v].push_back(u);
+        }
+        void add_sentinel(Sentinel *s){
+            a.push_back(s);
+             Sentinel::all_sentinels.push_back(s);
+        }
+
+        void preprocess_rank_counts() {
+            // Count how many sentinels have each rank level
+            for (auto s : a) {
+                rank_count[for_rank(s->get_rank())]++;
+            }
+        
+            // For each sentinel, count how many have strictly higher rank
+            for (auto s : a) {
+                int id = s->get_id();
+                int my_rank = for_rank(s->get_rank());
+                int count = 0;
+                for (int r = my_rank + 1; r <= 3; ++r) {
+                    count += rank_count[r];
+                }
+                higher_ranked[id] = count;
+            }
+        }
+        
+
+            void sort_by_rank() {
+                vector<Sentinel*> sorted = a;
+                SentinelComparator comp(2); // 2 = descending rank
+                sort(sorted.begin(), sorted.end(), comp);
+                for (auto s : sorted) {
+                    cout << s->get_id() << ' ';
+                }
+                cout << '\n';
+            }
+            
+
+
+        int count_higher_ranked(int id){
+            return higher_ranked[id];
+        }
+
+        int dfs(int u, int parent, bool is_active) {
+            if (dp[u][is_active] != -1) return dp[u][is_active];
+            int res = is_active; // If active, count this node
+            for (int v : tree[u]) {
+                if (v == parent) continue;
+                if (is_active) res += min(dfs(v, u, 0), dfs(v, u, 1));
+                else res += dfs(v, u, 1); // If not active, children must be active
+            }
+            return dp[u][is_active] = res;
+        }
+
+        int min_active_sentinels() {
+            tree = vector<vector<int>>(a.size());
+            for (auto& it : mp) {
+                int u = it.first;
+                vector<int>& adj = it.second;
+                for (int v : adj) {
+                    tree[u].push_back(v);
+                }
+            }
+            
+            dp = vector<vector<int>>(a.size(), vector<int>(2, -1));
+            return min(dfs(0, -1, 0), dfs(0, -1, 1));
+        }
+
+
+
+
+};
+
+int main(){
+    int n;
+    cin>>n;
+    Kingdom<Sentinel> k;
+    //unorded_map<int,vector<int>> mp;
+
+    for(int i=0;i<n-1;i++)
+    {
+        int u,v;
+        cin>>u>>v;
+        //mp[u].push_back(v);
+        k.add_edge(u,v);
+
+
+    }
+        
+
+    for(int i=0;i<n;i++)
+    {
+        string name,rank;
+        cin>>name>>rank;
+        Sentinel* s;
+        if(rank=="SENAPATI"){
+            s=new Senapati(i,name,rank);
+        }
+        else if(rank=="DANDANAYAKA"){
+            s=new Dandanayaka(i,name,rank);
+        }
+        else{
+            s=new Chaturangini(i,name,rank);
+        }
+        k.add_sentinel(s);
+        
+    }
+    k.preprocess_rank_counts();
+
+
+    int q;
+    cin>>q;
+    while(q--)
+    {
+        int t;
+        cin>>t;
+        if(t==1)
+        {
+            //the minimum number of active sentinels required to monitor all roads.
+            cout << k.min_active_sentinels()<<'\n';
+        }
+        else if(t==2)
+        {
+            //Output one line containing the IDs of all sentinels sorted by rank .
+            k.sort_by_rank();
+        }
+        else if(t==3)
+        {
+            int t1;
+            cin>>t1;
+            cout<<k.count_higher_ranked(t1)<<'\n';
+            //the number of sentinels who hold a strictly higher rank than the sentinel with the given ID.
+        }
+
+    }
+}
